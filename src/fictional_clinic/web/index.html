@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Northstar Clinic Console</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #17202c;
+        --muted: #66758a;
+        --line: #d9e1ea;
+        --surface: #ffffff;
+        --shell: #eef3f7;
+        --teal: #087f8c;
+        --teal-dark: #075d68;
+        --navy: #1b3452;
+        --coral: #c55b4b;
+        --amber: #b7791f;
+        --green: #2f855a;
+        --red: #b8322f;
+        --shadow: 0 18px 44px rgba(27, 52, 82, 0.12);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(180deg, #f7fafc 0%, var(--shell) 100%);
+        color: var(--ink);
+      }
+
+      button,
+      textarea,
+      input {
+        font: inherit;
+      }
+
+      .app-shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+      }
+
+      .sidebar {
+        background: #102235;
+        color: #eaf2f8;
+        padding: 28px 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 26px;
+      }
+
+      .brand {
+        display: grid;
+        gap: 6px;
+      }
+
+      .brand-mark {
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #2aa4a8, #d27b62);
+        display: grid;
+        place-items: center;
+        color: white;
+        font-weight: 800;
+      }
+
+      .brand h1 {
+        margin: 8px 0 0;
+        font-size: 20px;
+        line-height: 1.2;
+      }
+
+      .brand p {
+        margin: 0;
+        color: #adc2d3;
+        font-size: 13px;
+      }
+
+      .nav-group {
+        display: grid;
+        gap: 8px;
+      }
+
+      .nav-item {
+        border-radius: 8px;
+        padding: 11px 12px;
+        color: #cad8e4;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 14px;
+      }
+
+      .nav-item.active {
+        color: white;
+        background: rgba(42, 164, 168, 0.24);
+        border-color: rgba(42, 164, 168, 0.5);
+      }
+
+      .notice {
+        margin-top: auto;
+        border-radius: 8px;
+        padding: 14px;
+        background: rgba(197, 91, 75, 0.14);
+        border: 1px solid rgba(197, 91, 75, 0.35);
+        color: #ffe7e2;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .main {
+        padding: 26px;
+        display: grid;
+        gap: 20px;
+        align-content: start;
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .title-block h2 {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1.2;
+      }
+
+      .title-block p {
+        margin: 6px 0 0;
+        color: var(--muted);
+      }
+
+      .status-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .pill {
+        min-height: 32px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.74);
+        color: #405166;
+        padding: 0 12px;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--green);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+        gap: 20px;
+        align-items: start;
+      }
+
+      .wizard-step {
+        display: none;
+      }
+
+      .wizard-step.active {
+        display: block;
+      }
+
+      .stepper {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .step-pill.active {
+        border-color: var(--teal);
+        color: var(--teal-dark);
+        background: #edfafa;
+      }
+
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+      }
+
+      .panel-header {
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        align-items: center;
+      }
+
+      .panel-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .panel-title {
+        margin: 0;
+        font-size: 15px;
+        color: #263448;
+      }
+
+      .panel-body {
+        padding: 20px;
+      }
+
+      .role-control {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+
+      .role-control label {
+        display: block;
+      }
+
+      .role-control input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .role-card {
+        min-height: 86px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 13px;
+        display: grid;
+        align-content: center;
+        gap: 4px;
+        cursor: pointer;
+        background: #fbfdff;
+        transition:
+          border-color 160ms ease,
+          background 160ms ease,
+          transform 160ms ease;
+      }
+
+      .role-card strong {
+        font-size: 15px;
+      }
+
+      .role-card span {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .role-control input:checked + .role-card {
+        border-color: var(--teal);
+        background: #edfafa;
+        transform: translateY(-1px);
+      }
+
+      .field-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 750;
+        color: #263448;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 170px;
+        resize: vertical;
+        border: 1px solid #c6d1dd;
+        border-radius: 8px;
+        padding: 14px;
+        line-height: 1.5;
+        color: var(--ink);
+        background: #fbfdff;
+        outline: none;
+      }
+
+      .compact-textarea {
+        min-height: 110px;
+      }
+
+      textarea:focus {
+        border-color: var(--teal);
+        box-shadow: 0 0 0 3px rgba(8, 127, 140, 0.13);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin-top: 14px;
+      }
+
+      .primary-button {
+        min-height: 44px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--teal);
+        color: white;
+        padding: 0 18px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .primary-button:hover {
+        background: var(--teal-dark);
+      }
+
+      .primary-button:disabled {
+        opacity: 0.65;
+        cursor: wait;
+      }
+
+      .ghost-button {
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: white;
+        color: #405166;
+        padding: 0 12px;
+        cursor: pointer;
+      }
+
+      .ghost-button:hover {
+        border-color: var(--teal);
+        color: var(--teal-dark);
+      }
+
+      .toggle-row {
+        margin-top: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #405166;
+        font-size: 14px;
+      }
+
+      .toggle-row input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--teal);
+      }
+
+      .samples {
+        display: grid;
+        gap: 10px;
+      }
+
+      .sample-button {
+        width: 100%;
+        text-align: left;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfdff;
+        color: #2d3d52;
+        padding: 12px;
+        cursor: pointer;
+        line-height: 1.35;
+      }
+
+      .sample-button:hover {
+        border-color: var(--teal);
+      }
+
+      .answer-panel {
+        min-height: 320px;
+      }
+
+      .answer-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .answer {
+        white-space: pre-wrap;
+        margin: 0;
+        line-height: 1.58;
+        color: #243145;
+      }
+
+      .answer.is-error {
+        color: var(--red);
+      }
+
+      .source-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 12px;
+      }
+
+      .source-list li {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 13px;
+        background: #fbfdff;
+      }
+
+      .source-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 6px;
+        color: #233248;
+        font-weight: 800;
+      }
+
+      .source-score {
+        color: var(--amber);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .source-snippet {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .trace-list {
+        margin: 0;
+        padding-left: 20px;
+        color: #405166;
+        line-height: 1.5;
+        display: grid;
+        gap: 8px;
+      }
+
+      .explore-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .explore-button {
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfdff;
+        color: #2d3d52;
+        padding: 0 12px;
+        cursor: pointer;
+      }
+
+      .explore-button:hover,
+      .explore-button.active {
+        border-color: var(--teal);
+        background: #edfafa;
+        color: var(--teal-dark);
+      }
+
+      .explore-detail {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfdff;
+        padding: 14px;
+      }
+
+      .reference-link {
+        color: var(--teal-dark);
+        overflow-wrap: anywhere;
+      }
+
+      .empty-state {
+        color: var(--muted);
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 920px) {
+        .app-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          padding: 18px;
+        }
+
+        .nav-group,
+        .notice {
+          display: none;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .status-strip {
+          justify-content: flex-start;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .main {
+          padding: 16px;
+        }
+
+        .role-control {
+          grid-template-columns: 1fr;
+        }
+
+        .title-block h2 {
+          font-size: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <section class="brand" aria-label="Northstar Clinic">
+          <div class="brand-mark">N</div>
+          <h1>Northstar Clinic</h1>
+          <p>Role-aware learning console</p>
+        </section>
+
+        <nav class="nav-group" aria-label="Workspace">
+          <div class="nav-item active">Consult Console</div>
+          <div class="nav-item">Knowledge Base</div>
+          <div class="nav-item">Fine-Tune Dataset</div>
+          <div class="nav-item">Evaluation Notes</div>
+        </nav>
+
+        <div class="notice">
+          Fictional data only. Not for real diagnosis, treatment, triage, or patient care.
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="title-block">
+            <h2>Consult Console</h2>
+            <p>Same evidence, different answer style for patient and clinician workflows.</p>
+          </div>
+          <div class="status-strip" aria-label="System status">
+            <span class="pill"><span class="dot"></span>Local RAG ready</span>
+            <span class="pill">Synthetic clinic docs</span>
+            <span class="pill" id="active-role">Patient mode</span>
+          </div>
+        </header>
+
+        <div class="stepper" aria-label="Consult steps">
+          <span class="pill step-pill active" data-step-pill="audience">1 Audience</span>
+          <span class="pill step-pill" data-step-pill="knowledge">2 Knowledge</span>
+          <span class="pill step-pill" data-step-pill="question">3 Question</span>
+          <span class="pill step-pill" data-step-pill="answer">4 Answer</span>
+        </div>
+
+        <section class="panel wizard-step active" data-step="audience">
+          <div class="panel-header">
+            <h3 class="panel-title">Who are you asking as?</h3>
+          </div>
+          <div class="panel-body">
+            <div class="role-control" aria-label="Role">
+              <label>
+                <input type="radio" name="role" value="patient" checked />
+                <span class="role-card">
+                  <strong>Patient</strong>
+                  <span>Plain language, safety caveats, practical questions.</span>
+                </span>
+              </label>
+              <label>
+                <input type="radio" name="role" value="general" />
+                <span class="role-card">
+                  <strong>General visitor</strong>
+                  <span>Simple overview with less clinical detail.</span>
+                </span>
+              </label>
+              <label>
+                <input type="radio" name="role" value="doctor" />
+                <span class="role-card">
+                  <strong>Doctor</strong>
+                  <span>Professional framing, evidence notes, added context.</span>
+                </span>
+              </label>
+            </div>
+            <div class="actions">
+              <button class="primary-button" type="button" data-next="knowledge">Continue</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel wizard-step" data-step="knowledge">
+          <div class="panel-header">
+            <h3 class="panel-title">Use live knowledge?</h3>
+          </div>
+          <div class="panel-body">
+            <label class="toggle-row">
+              <input id="live-knowledge" type="checkbox" checked />
+              Include Wikidata, DBpedia, and paper/article lookup for more reasoned answers
+            </label>
+            <div class="actions">
+              <button class="ghost-button" type="button" data-next="audience">Back</button>
+              <button class="primary-button" type="button" data-next="question">Continue</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid wizard-step" data-step="question">
+          <div class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Medical concern or question</h3>
+              <button class="ghost-button" id="clear" type="button">Clear</button>
+            </div>
+            <div class="panel-body">
+              <label class="field-label" for="question">What do you want to know?</label>
+              <textarea id="question">What should I know about breast cancer?</textarea>
+
+              <div id="doctor-context-wrap">
+                <label class="field-label" for="clinician-context">Knowledge you want to add</label>
+                <textarea class="compact-textarea" id="clinician-context" placeholder="Add known clinical context, constraints, patient history, local guideline notes, or hypotheses."></textarea>
+              </div>
+
+              <div class="actions">
+                <button class="ghost-button" type="button" data-next="knowledge">Back</button>
+                <button class="primary-button" id="ask" type="button">Generate Answer</button>
+                <span class="pill" id="request-state">Idle</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Sample Questions</h3>
+            </div>
+            <div class="panel-body samples">
+              <button class="sample-button" type="button">What should I know about breast cancer?</button>
+              <button class="sample-button" type="button">What should I know about diabetes?</button>
+              <button class="sample-button" type="button">How does the clinic handle Amber Fever follow-up?</button>
+              <button class="sample-button" type="button">When is a Glowstone allergy visit escalated?</button>
+            </div>
+          </aside>
+        </section>
+
+        <section class="grid wizard-step" data-step="answer">
+          <section class="panel answer-panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Answer</h3>
+              <div class="panel-actions">
+                <div class="answer-toolbar" id="answer-meta">Waiting for request</div>
+                <button class="ghost-button" id="copy-answer" type="button">Copy</button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <pre class="answer" id="answer">Choose a role and generate an answer.</pre>
+            </div>
+          </section>
+
+          <aside class="panel">
+            <div class="panel-header">
+              <h3 class="panel-title">Need to know more?</h3>
+            </div>
+            <div class="panel-body">
+              <div class="explore-actions" id="explore-actions"></div>
+              <div class="explore-detail" id="explore-detail">
+                <p class="empty-state">Generate an answer, then choose what to inspect.</p>
+              </div>
+              <div class="actions">
+                <button class="ghost-button" type="button" data-next="question">Ask another question</button>
+              </div>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const askButton = document.querySelector("#ask");
+      const clearButton = document.querySelector("#clear");
+      const copyButton = document.querySelector("#copy-answer");
+      const liveKnowledge = document.querySelector("#live-knowledge");
+      const questionInput = document.querySelector("#question");
+      const clinicianContext = document.querySelector("#clinician-context");
+      const doctorContextWrap = document.querySelector("#doctor-context-wrap");
+      const answer = document.querySelector("#answer");
+      const exploreActions = document.querySelector("#explore-actions");
+      const exploreDetail = document.querySelector("#explore-detail");
+      const requestState = document.querySelector("#request-state");
+      const activeRole = document.querySelector("#active-role");
+      const answerMeta = document.querySelector("#answer-meta");
+      const roleInputs = document.querySelectorAll("input[name='role']");
+      const sampleButtons = document.querySelectorAll(".sample-button");
+      let lastResponse = null;
+
+      function selectedRole() {
+        return document.querySelector("input[name='role']:checked").value;
+      }
+
+      function roleLabel(role) {
+        if (role === "doctor") {
+          return "Doctor mode";
+        }
+        return role === "general" ? "General visitor mode" : "Patient mode";
+      }
+
+      function goToStep(stepName) {
+        document.querySelectorAll(".wizard-step").forEach((step) => {
+          step.classList.toggle("active", step.dataset.step === stepName);
+        });
+        document.querySelectorAll(".step-pill").forEach((pill) => {
+          pill.classList.toggle("active", pill.dataset.stepPill === stepName);
+        });
+      }
+
+      function updateRoleState() {
+        const role = selectedRole();
+        activeRole.textContent = roleLabel(role);
+        doctorContextWrap.style.display = role === "doctor" ? "block" : "none";
+      }
+
+      function setLoading(isLoading) {
+        askButton.disabled = isLoading;
+        requestState.textContent = isLoading ? "Retrieving evidence..." : "Idle";
+      }
+
+      function setAnswer(text, isError = false) {
+        answer.textContent = text;
+        answer.classList.toggle("is-error", isError);
+      }
+
+      function renderExploreEmpty(message) {
+        exploreActions.innerHTML = "";
+        exploreDetail.innerHTML = "";
+        const text = document.createElement("p");
+        text.className = "empty-state";
+        text.textContent = message;
+        exploreDetail.appendChild(text);
+      }
+
+      function renderSources(target, sourceItems) {
+        target.innerHTML = "";
+        const list = document.createElement("ol");
+        list.className = "source-list";
+        if (!sourceItems.length) {
+          const item = document.createElement("li");
+          const text = document.createElement("p");
+          text.className = "empty-state";
+          text.textContent = "No matching sources were found for this option.";
+          item.appendChild(text);
+          list.appendChild(item);
+          target.appendChild(list);
+          return;
+        }
+
+        sourceItems.forEach((source) => {
+          const item = document.createElement("li");
+          const title = document.createElement("div");
+          const name = document.createElement("span");
+          const score = document.createElement("span");
+          const snippet = document.createElement("p");
+
+          title.className = "source-title";
+          score.className = "source-score";
+          snippet.className = "source-snippet";
+
+          name.textContent = source.title;
+          score.textContent = source.title.startsWith("OpenAlex:") ? "paper/article" : "reference";
+          snippet.textContent = source.snippet;
+
+          title.appendChild(name);
+          title.appendChild(score);
+          item.appendChild(title);
+          item.appendChild(snippet);
+          if (source.path) {
+            const link = document.createElement("a");
+            link.className = "reference-link";
+            link.href = source.path;
+            link.target = "_blank";
+            link.rel = "noreferrer";
+            link.textContent = source.path;
+            item.appendChild(link);
+          }
+          list.appendChild(item);
+        });
+        target.appendChild(list);
+      }
+
+      function renderList(listElement, items, emptyMessage) {
+        listElement.innerHTML = "";
+        if (!items || !items.length) {
+          const item = document.createElement("li");
+          item.textContent = emptyMessage;
+          listElement.appendChild(item);
+          return;
+        }
+
+        items.forEach((text) => {
+          const item = document.createElement("li");
+          item.textContent = text;
+          listElement.appendChild(item);
+        });
+      }
+
+      function renderExploreOptions(data) {
+        lastResponse = data;
+        exploreActions.innerHTML = "";
+        exploreDetail.innerHTML = "";
+
+        if (!data.explore_options || !data.explore_options.length) {
+          renderExploreEmpty("No follow-up options are available.");
+          return;
+        }
+
+        const prompt = document.createElement("p");
+        prompt.className = "empty-state";
+        prompt.textContent = "Choose what you want to inspect next.";
+        exploreDetail.appendChild(prompt);
+
+        data.explore_options.forEach((option) => {
+          const button = document.createElement("button");
+          button.className = "explore-button";
+          button.type = "button";
+          button.textContent = option.label;
+          button.title = option.description;
+          button.addEventListener("click", () => showExploreOption(option.id, button));
+          exploreActions.appendChild(button);
+        });
+      }
+
+      function showExploreOption(optionId, activeButton) {
+        document.querySelectorAll(".explore-button").forEach((button) => {
+          button.classList.toggle("active", button === activeButton);
+        });
+        exploreDetail.innerHTML = "";
+
+        if (!lastResponse) {
+          renderExploreEmpty("Generate an answer first.");
+          return;
+        }
+
+        if (optionId === "references") {
+          const references = lastResponse.sources.filter(
+            (source) => !source.title.startsWith("OpenAlex:")
+          );
+          renderSources(exploreDetail, references);
+          return;
+        }
+
+        if (optionId === "papers") {
+          const papers = lastResponse.sources.filter((source) =>
+            source.title.startsWith("OpenAlex:")
+          );
+          renderSources(exploreDetail, papers);
+          return;
+        }
+
+        if (optionId === "reasoning") {
+          const list = document.createElement("ol");
+          list.className = "trace-list";
+          exploreDetail.appendChild(list);
+          renderList(list, lastResponse.reasoning_trace, "No reasoning summary returned.");
+          return;
+        }
+
+        if (optionId === "query-plan") {
+          const plan = lastResponse.query_plan;
+          renderList(
+            exploreDetail,
+            [
+              `Original question: ${plan.original_question}`,
+              `Processed topic: ${plan.topic}`,
+              `Role: ${plan.role}`,
+              `Sources checked: ${plan.sources_to_check.join(", ")}`
+            ],
+            "No query plan returned."
+          );
+        }
+      }
+
+      async function askQuestion() {
+        const role = selectedRole();
+        const question = questionInput.value.trim();
+
+        if (!question) {
+          setAnswer("Enter a question first.", true);
+          answerMeta.textContent = "Missing question";
+          return;
+        }
+
+        setLoading(true);
+        setAnswer("Retrieving fictional clinic evidence and drafting response...");
+        answerMeta.textContent = roleLabel(role);
+        renderExploreEmpty("Follow-up options will appear after the answer.");
+        goToStep("answer");
+
+        try {
+          const response = await fetch("/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              role,
+              question,
+              include_live_knowledge: liveKnowledge.checked,
+              clinician_context: role === "doctor" ? clinicianContext.value.trim() : null
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
+          setAnswer(data.answer);
+          const stepCount = data.agent_steps ? data.agent_steps.length : 0;
+          answerMeta.textContent = `${roleLabel(data.role)} - ${data.sources.length} sources - ${stepCount} agent steps`;
+          renderExploreOptions(data);
+        } catch (error) {
+          setAnswer(`Request failed: ${error.message}`, true);
+          answerMeta.textContent = "Request failed";
+          renderExploreEmpty("No follow-up options because the request failed.");
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      roleInputs.forEach((input) => {
+        input.addEventListener("change", updateRoleState);
+      });
+
+      document.querySelectorAll("[data-next]").forEach((button) => {
+        button.addEventListener("click", () => {
+          goToStep(button.dataset.next);
+        });
+      });
+
+      sampleButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          questionInput.value = button.textContent.trim();
+          questionInput.focus();
+        });
+      });
+
+      clearButton.addEventListener("click", () => {
+        questionInput.value = "";
+        clinicianContext.value = "";
+        setAnswer("Choose a role and generate an answer.");
+        answerMeta.textContent = "Waiting for request";
+        lastResponse = null;
+        renderExploreEmpty("Generate an answer, then choose what to inspect.");
+        questionInput.focus();
+      });
+
+      copyButton.addEventListener("click", async () => {
+        const text = answer.textContent.trim();
+        if (!text || text === "Choose a role and generate an answer.") {
+          return;
+        }
+
+        await navigator.clipboard.writeText(text);
+        copyButton.textContent = "Copied";
+        window.setTimeout(() => {
+          copyButton.textContent = "Copy";
+        }, 1200);
+      });
+
+      questionInput.addEventListener("keydown", (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+          askQuestion();
+        }
+      });
+
+      askButton.addEventListener("click", askQuestion);
+      updateRoleState();
+    </script>
+  </body>
+</html>
