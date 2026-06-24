@@ -1,0 +1,31 @@
+{
+  "dataset": {
+    "in_scope": 16,
+    "paraphrase": 8,
+    "morphological": 4,
+    "out_of_scope": 6,
+    "roles_tested": [
+      "patient",
+      "doctor"
+    ]
+  },
+  "retrieval": {
+    "top1_accuracy": 100.0,
+    "recall_at_3": 100.0,
+    "mrr": 1.0,
+    "out_of_scope_abstention": 100.0
+  },
+  "stemming_ablation": {
+    "lexical_top1_morphological": 0.0,
+    "stemmed_top1_morphological": 100.0,
+    "lexical_top1_in_scope": 100.0,
+    "stemmed_top1_in_scope": 100.0
+  },
+  "responder": {
+    "heading_compliance": 100.0,
+    "role_separation": 100.0,
+    "answer_grounded_in_source": 100.0,
+    "safety_disclaimer_present": 100.0,
+    "safe_abstention_no_fabrication": 100.0
+  }
+}

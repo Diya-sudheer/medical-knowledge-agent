@@ -1,29 +1,90 @@
-# Fictional Clinic Role-Aware LLM
+# Fictional Clinic — Role-Aware Medical Knowledge Agent
 
-A learning project for building a customized LLM workflow with:
+[![CI](https://github.com/Diya-sudheer/medical-knowledge-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Diya-sudheer/medical-knowledge-agent/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-- RAG over fictional clinic documents
-- optional live lookup from open knowledge graphs and paper/article indexes
-- an evidence-gathering agent with visible retrieval steps
-- role-aware responses for patients and doctors
-- supervised fine-tuning dataset generation
-- FastAPI backend and minimal web UI
-- tests and GitHub Actions CI
+A retrieval-augmented agent that answers the **same medical question differently
+depending on who is asking** — a patient gets plain, cautious language; a doctor
+gets a structured, protocol-style brief — grounded in retrieved sources, with an
+evaluation suite that proves it.
 
-This is intentionally fake medical data. Do not use it for clinical decisions,
-real patients, protected health information, diagnosis, or treatment.
+> ⚠️ **Intentionally fake medical data.** Every condition here is invented
+> (Luma Cough Syndrome, Amber Fever, …). Do not use this for real diagnosis,
+> treatment, triage, or patient care.
 
-## What It Demonstrates
+![The Consult Console: pick an audience, ask a question, get a role-tailored, grounded answer](docs/img/01-console.png)
 
-The same retrieved facts are rewritten differently depending on role:
+## Why this project is interesting
 
-- `patient`: plain language, empathetic, cautious, and non-diagnostic
-- `doctor`: concise clinical-style structure with protocol details
+- **Role-aware generation** — one retrieval, three audiences (`patient`,
+  `general`, `doctor`), with measurable separation between them.
+- **Grounded + honest** — answers cite the retrieved source, and the agent
+  *abstains* (returns nothing, then says so) on questions it has no evidence for,
+  instead of hallucinating a protocol.
+- **Provably good, not just claimed-good** — a deterministic, offline
+  [evaluation suite](evaluation/RESULTS.md) scores retrieval and response quality
+  on every CI run.
 
-RAG provides the facts. Fine-tuning examples teach the model the expected
-format and role behavior.
+## Evaluation results
 
-## Quick Start
+Measured by [`evaluation/run_eval.py`](evaluation/run_eval.py) over **16 in-scope
+questions (8 of them hard paraphrases that never name the condition) + 6
+out-of-scope questions**. Fully deterministic and offline — regenerate the exact
+numbers yourself with `python -m evaluation.run_eval`.
+
+| Retrieval (RAG) | Score |  | Role-aware responder | Score |
+| --- | --- | --- | --- | --- |
+| Top-1 accuracy | **100%** |  | Heading compliance | **100%** |
+| Recall@3 | **100%** |  | Role separation | **100%** |
+| MRR | **1.00** |  | Answer grounded in source | **100%** |
+| Out-of-scope abstention | **100%** |  | Safety disclaimer present | **100%** |
+|  |  |  | Safe abstention (no fabrication) | **100%** |
+
+These scores are enforced as a [pytest guardrail](tests/test_evaluation.py), so a
+change that degrades retrieval or role behaviour fails CI. Full report:
+[`evaluation/RESULTS.md`](evaluation/RESULTS.md).
+
+## The same question, two roles
+
+Both panels below answer the **identical** question — *"How does the clinic
+handle Amber Fever follow-up?"* — from the **same retrieved sources**. Only the
+audience differs.
+
+<table>
+<tr>
+<th>🧑 Patient — plain, cautious, safety-first</th>
+<th>🩺 Doctor — structured clinical brief</th>
+</tr>
+<tr>
+<td valign="top"><img src="docs/img/03-patient.png" alt="Patient-mode answer: What this may mean, When to get help, Safety note"></td>
+<td valign="top"><img src="docs/img/02-doctor.png" alt="Doctor-mode answer: Clinical summary, Evidence quality notes, Suggested next steps"></td>
+</tr>
+</table>
+
+The retriever returns the same facts; the responder rewrites tone, structure, and
+depth for the role — and the doctor view additionally folds in clinician-supplied
+context. The [evaluation](#evaluation-results) measures this separation so it
+can't silently break.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Q["User question + role"] --> A["EvidenceAgent<br/>(plan + retrieval trace)"]
+    A --> R["LocalRetriever<br/>lexical match over clinic docs"]
+    A -. "optional, ENABLE_LIVE_KG" .-> K["Wikidata / DBpedia / OpenAlex"]
+    R --> E{"Response engine"}
+    K --> E
+    E --> P["patient / general answer<br/>plain, cautious, non-diagnostic"]
+    E --> D["doctor answer<br/>structured protocol brief"]
+```
+
+The default response engine is a **deterministic local template engine** (no API
+key needed), which is what makes the evaluation reproducible. Set `USE_OPENAI=true`
+to swap in an LLM for generation while keeping the same retrieval and prompts.
+
+## Quick start
 
 ```powershell
 python -m venv .venv
@@ -35,8 +96,8 @@ uvicorn fictional_clinic.app:app --reload
 
 Open http://127.0.0.1:8000.
 
-By default, `USE_OPENAI=false`, so the app uses a deterministic local response
-engine that is useful for learning and tests. To use OpenAI generation:
+By default `USE_OPENAI=false`, so the app uses the deterministic local engine.
+To use OpenAI generation instead:
 
 ```text
 OPENAI_API_KEY=your_key
@@ -44,57 +105,71 @@ USE_OPENAI=true
 OPENAI_MODEL=gpt-4.1-mini
 ```
 
-To let the agent query Wikidata, DBpedia, and OpenAlex for live context, set:
+To let the agent query Wikidata, DBpedia, and OpenAlex for live context:
 
 ```text
 ENABLE_LIVE_KG=true
 ```
 
-The browser still lets each request decide whether to include live lookup.
-Open knowledge graph and paper/article results are treated as source context, not medical authority.
+Each request still decides whether to include the live lookup, and those results
+are treated as background context, not medical authority.
 
-If you create a fine-tuned model, set:
+## Run the tests and the evaluation
 
-```text
-OPENAI_FINE_TUNED_MODEL=ft:...
+```powershell
+pytest                          # unit + integration tests + eval guardrail
+python -m evaluation.run_eval   # regenerate evaluation/RESULTS.md and results.json
 ```
 
-## Generate Fine-Tuning Data
+## Generate fine-tuning data
 
 ```powershell
 clinic-generate-ft-data --output data/generated/role_examples.jsonl
 ```
 
 The generated JSONL contains synthetic patient and doctor examples based on the
-fictional knowledge base. It is a starter dataset, not production-quality
-training data.
+fictional knowledge base. It is a starter dataset, not production training data.
 
-## Run Tests
-
-```powershell
-pytest
-```
-
-## Project Layout
+## Project layout
 
 ```text
 src/fictional_clinic/
-  app.py              FastAPI app
+  app.py              FastAPI app and endpoints
   config.py           environment settings
   models.py           request/response schemas and role enum
   prompts.py          role-specific prompts
-  kg.py               optional Wikidata client
+  kg.py               optional Wikidata/DBpedia/OpenAlex clients
   agent.py            evidence gathering and retrieval trace
   rag.py              local document loading and retrieval
-  responder.py        local and OpenAI response engines
+  responder.py        local (deterministic) and OpenAI response engines
   finetune_data.py    synthetic JSONL generator
   web/index.html      minimal browser UI
 data/clinic_docs/     fictional clinic knowledge base
-tests/                unit and integration tests
+evaluation/           gold cases, metrics runner, and generated report
+tests/                unit, integration, and evaluation-threshold tests
 ```
 
-## Safety Notes
+## Limitations and roadmap
 
-This project is educational. A real patient/doctor assistant would need clinical
-governance, expert review, evaluation, monitoring, PHI controls, audit logging,
-security review, emergency escalation behavior, and regulatory analysis.
+This is an educational project, and the evaluation is honest about where it would
+break:
+
+- **Retrieval is lexical** (term overlap + title boost + lightweight stemming).
+  Adding the stemmer was a measured decision, not a guess: on a held-out slice of
+  morphological-variant queries (where the link word only appears as a plural or
+  verb form, e.g. *"interruptions"* vs the document's *"interruption"*), it lifts
+  top-1 accuracy from **0% → 100%** with no regression on the in-scope set — see
+  the [ablation table](evaluation/RESULTS.md#retrieval-robustness-does-stemming-help-ablation).
+  It still has **no synonym or semantic matching**: a query for *"trouble
+  breathing"* would not find *"shortness of breath."* **Next step:** add an
+  embedding-based retriever and re-run the same eval to measure that gap.
+- **The default engine is template-based**, which guarantees structure but not
+  fluency. The OpenAI path adds fluency; evaluating *that* output needs an
+  LLM-as-judge or human rubric, which the current deterministic suite does not do.
+- **Tiny knowledge base** (4 fictional documents). Scaling up is the natural way
+  to stress-test retrieval and grounding.
+
+A real patient/doctor assistant would additionally need clinical governance,
+expert review, monitoring, PHI controls, audit logging, security review,
+emergency-escalation behaviour, and regulatory analysis. None of that is present
+or implied here.
