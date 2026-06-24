@@ -45,6 +45,32 @@ These scores are enforced as a [pytest guardrail](tests/test_evaluation.py), so 
 change that degrades retrieval or role behaviour fails CI. Full report:
 [`evaluation/RESULTS.md`](evaluation/RESULTS.md).
 
+## Real-data retrieval benchmark (MedQuAD)
+
+The fictional eval above is deterministic and scores 100% by design. To test
+retrieval on a *real, messy* corpus, a second track runs over
+[MedQuAD](https://github.com/abachaa/MedQuAD) — 1,500 real medical Q&A passages
+from NIH / NCI / CDC — and pits the lexical retriever (BM25) against an embedding
+retriever (MiniLM, a real neural model). Real questions, real **sub-100%** numbers:
+
+| Metric | BM25 (lexical) | MiniLM (semantic) | Δ |
+| --- | --- | --- | --- |
+| Recall@1 | 0.657 | **0.750** | +9.3 pts |
+| Recall@5 | 0.864 | **0.881** | +1.7 pts |
+| Recall@10 | 0.880 | **0.900** | +2.0 pts |
+| MRR@10 | 0.747 | **0.808** | +6.1 pts |
+
+Semantic retrieval wins most at **Recall@1** — it finds the right passage when the
+question and answer use *different words for the same idea* (the report lists real
+examples BM25 missed entirely but MiniLM ranked #1). Full write-up:
+[`benchmarks/medquad/RESULTS.md`](benchmarks/medquad/RESULTS.md). Reproduce it:
+
+```bash
+pip install -e ".[benchmark]"
+python -m benchmarks.medquad.ingest        # downloads + parses MedQuAD
+python -m benchmarks.medquad.run_benchmark
+```
+
 ## The same question, two roles
 
 Both panels below answer the **identical** question — *"How does the clinic
@@ -160,14 +186,18 @@ break:
   verb form, e.g. *"interruptions"* vs the document's *"interruption"*), it lifts
   top-1 accuracy from **0% → 100%** with no regression on the in-scope set — see
   the [ablation table](evaluation/RESULTS.md#retrieval-robustness-does-stemming-help-ablation).
-  It still has **no synonym or semantic matching**: a query for *"trouble
-  breathing"* would not find *"shortness of breath."* **Next step:** add an
-  embedding-based retriever and re-run the same eval to measure that gap.
+  The fictional pipeline still matches words, not meaning — but that gap is now
+  **built and measured on real data**: the
+  [MedQuAD benchmark](benchmarks/medquad/RESULTS.md) pits this lexical approach
+  (BM25) against an embedding retriever over 1,500 real medical passages, where
+  semantics lifts **Recall@1 from 0.66 → 0.75**.
 - **The default engine is template-based**, which guarantees structure but not
   fluency. The OpenAI path adds fluency; evaluating *that* output needs an
   LLM-as-judge or human rubric, which the current deterministic suite does not do.
-- **Tiny knowledge base** (4 fictional documents). Scaling up is the natural way
-  to stress-test retrieval and grounding.
+- **Tiny fictional knowledge base** (4 documents) keeps the core demo fast and
+  deterministic. For scale and realism, the
+  [MedQuAD benchmark](benchmarks/medquad/RESULTS.md) runs the retrievers over
+  1,500 real NIH/CDC medical passages instead.
 
 A real patient/doctor assistant would additionally need clinical governance,
 expert review, monitoring, PHI controls, audit logging, security review,

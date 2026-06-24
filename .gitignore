@@ -11,3 +11,6 @@ build/
 *.egg-info/
 data/generated/
 logs/
+
+# MedQuAD benchmark data — regenerate with `python -m benchmarks.medquad.ingest`
+benchmarks/medquad/data/
