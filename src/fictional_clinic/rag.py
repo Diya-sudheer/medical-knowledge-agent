@@ -20,21 +20,28 @@ STOPWORDS = {
     "at",
     "be",
     "does",
+    "feel",
     "for",
+    "get",
+    "getting",
+    "got",
     "handle",
     "how",
     "i",
     "in",
     "is",
     "it",
+    "keep",
     "know",
     "me",
+    "need",
     "of",
     "on",
     "or",
     "should",
     "the",
     "to",
+    "want",
     "what",
     "when",
     "where",
@@ -58,6 +65,26 @@ def meaningful_terms(text: str) -> set[str]:
     return {token for token in tokenize(text) if token not in STOPWORDS and len(token) > 2}
 
 
+_STEM_SUFFIXES = ("ing", "ed", "s")
+
+
+def stem(token: str) -> str:
+    """Lightweight, dependency-free suffix stripper for plurals and -ing/-ed forms.
+
+    Enough to match ``coughing``/``cough`` and ``interruptions``/``interruption``
+    without pulling in a full stemmer. It is intentionally conservative (only
+    strips when at least three characters remain).
+    """
+    for suffix in _STEM_SUFFIXES:
+        if token.endswith(suffix) and len(token) - len(suffix) >= 3:
+            return token[: -len(suffix)]
+    return token
+
+
+def stemmed_terms(text: str) -> set[str]:
+    return {stem(term) for term in meaningful_terms(text)}
+
+
 def load_documents(data_dir: Path = DATA_DIR) -> list[Document]:
     documents: list[Document] = []
     for path in sorted(data_dir.glob("*.md")):
@@ -68,12 +95,20 @@ def load_documents(data_dir: Path = DATA_DIR) -> list[Document]:
 
 
 class LocalRetriever:
-    def __init__(self, documents: list[Document] | None = None):
+    def __init__(self, documents: list[Document] | None = None, stem_terms: bool = True):
         self.documents = documents if documents is not None else load_documents()
-        self._doc_tokens = [tokenize(document.text) for document in self.documents]
+        self.stem_terms = stem_terms
+        self._doc_tokens = [self._prepare(document.text) for document in self.documents]
+
+    def _prepare(self, text: str) -> list[str]:
+        tokens = tokenize(text)
+        return [stem(token) for token in tokens] if self.stem_terms else tokens
+
+    def _terms(self, text: str) -> set[str]:
+        return stemmed_terms(text) if self.stem_terms else meaningful_terms(text)
 
     def search(self, query: str, limit: int = 3) -> list[Source]:
-        query_terms = meaningful_terms(query)
+        query_terms = self._terms(query)
         if not query_terms:
             return []
 
@@ -85,7 +120,7 @@ class LocalRetriever:
                 continue
 
             overlap = sum(token_counts.values())
-            title_terms = meaningful_terms(document.title)
+            title_terms = self._terms(document.title)
             title_boost = len(matched_terms & title_terms)
             score = overlap + (title_boost * 2)
             normalized = score / math.sqrt(max(len(tokens), 1))
