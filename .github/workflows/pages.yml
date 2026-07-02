@@ -32,7 +32,7 @@ jobs:
           cp src/fictional_clinic/*.py _site/py/fictional_clinic/
           cp data/clinic_docs/*.md _site/data/clinic_docs/
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
