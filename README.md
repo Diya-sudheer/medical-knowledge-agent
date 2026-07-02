@@ -13,6 +13,11 @@ evaluation suite that proves it.
 > (Luma Cough Syndrome, Amber Fever, …). Do not use this for real diagnosis,
 > treatment, triage, or patient care.
 
+**▶ [Try it live in your browser](https://diya-sudheer.github.io/medical-knowledge-agent/)** —
+the demo runs the *actual* retrieval + role-aware responder pipeline client-side via
+Pyodide/WebAssembly. Ask the same question as a patient and as a doctor and watch the
+answer change. No server, no API key.
+
 ![The Consult Console: pick an audience, ask a question, get a role-tailored, grounded answer](docs/img/01-console.png)
 
 ## Why this project is interesting
@@ -121,6 +126,17 @@ uvicorn fictional_clinic.app:app --reload
 ```
 
 Open http://127.0.0.1:8000.
+
+### Or run it with Docker
+
+```bash
+docker build -t fictional-clinic .
+docker run --rm -p 8000:8000 fictional-clinic
+```
+
+The image needs no API key (the default engine is local and deterministic), runs as a
+non-root user, ships a container healthcheck, and is built + smoke-tested
+(`/health` and a full `/ask` round-trip) on every push in CI.
 
 By default `USE_OPENAI=false`, so the app uses the deterministic local engine.
 To use OpenAI generation instead:

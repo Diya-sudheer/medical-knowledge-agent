@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from openai import OpenAI
-
 from fictional_clinic.config import Settings
 from fictional_clinic.models import Role, Source
 from fictional_clinic.prompts import DISCLAIMER, build_prompt
@@ -102,6 +100,11 @@ class LocalTemplateEngine(ResponseEngine):
 
 class OpenAIResponseEngine(ResponseEngine):
     def __init__(self, settings: Settings):
+        # Imported lazily so the default (local, deterministic) path never
+        # requires the openai package — keeps Docker images and the in-browser
+        # demo lean, and only loads it when USE_OPENAI=true.
+        from openai import OpenAI
+
         self.settings = settings
         self.client = OpenAI(api_key=settings.openai_api_key)
 

@@ -17,6 +17,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest>=8.2.0",
+  "pytest-cov>=5.0.0",
   "ruff>=0.5.0"
 ]
 benchmark = [
@@ -41,4 +42,9 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.coverage.run]
+# semantic.py needs the optional [benchmark] extras (torch); it is exercised by
+# the MedQuAD benchmark rather than the fast unit suite.
+omit = ["src/fictional_clinic/semantic.py"]
 

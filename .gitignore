@@ -14,3 +14,4 @@ logs/
 
 # MedQuAD benchmark data — regenerate with `python -m benchmarks.medquad.ingest`
 benchmarks/medquad/data/
+_site/

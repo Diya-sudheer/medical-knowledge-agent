@@ -7,18 +7,73 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.python-version }}
+
       - name: Install
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
+
       - name: Lint
         run: ruff check .
-      - name: Test
-        run: pytest
 
+      - name: Test (coverage gate 65%)
+        run: pytest --cov=fictional_clinic --cov-report=term --cov-fail-under=65
+
+  evaluation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run evaluation suite
+        run: python -m evaluation.run_eval
+
+      - name: Publish results to job summary
+        run: cat evaluation/RESULTS.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload results artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-results
+          path: |
+            evaluation/RESULTS.md
+            evaluation/results.json
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t fictional-clinic .
+
+      - name: Smoke test /health and /ask
+        run: |
+          docker run -d --rm -p 8000:8000 --name clinic fictional-clinic
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8000/health; then ok=1; break; fi
+            sleep 1
+          done
+          test "$ok" = "1"
+          curl -fsS -X POST http://127.0.0.1:8000/ask \
+            -H 'Content-Type: application/json' \
+            -d '{"question": "What should I know about Luma Cough Syndrome?", "role": "patient"}' \
+            | python -c "import json,sys; d=json.load(sys.stdin); assert d['sources'], 'no sources'; print('answer chars:', len(d['answer']))"
+          docker stop clinic
