@@ -8,7 +8,7 @@
 # knowledge-graph lookup, pass the documented env vars:
 #   docker run --rm -p 8000:8000 -e USE_OPENAI=true -e OPENAI_API_KEY=... fictional-clinic
 
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
