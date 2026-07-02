@@ -49,7 +49,7 @@ jobs:
         run: cat evaluation/RESULTS.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload results artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: evaluation-results
           path: |
