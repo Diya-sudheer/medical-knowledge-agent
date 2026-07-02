@@ -21,7 +21,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The demo runs the real pipeline (via Pyodide), so the deployed site
       # ships the actual package modules and the fictional clinic corpus.
