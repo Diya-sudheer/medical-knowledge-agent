@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fictional Clinic — role-aware medical knowledge agent (live demo)</title>
+<meta name="description" content="Ask the same medical question as a patient or a doctor and compare the answers. The real Python pipeline, running in your browser on fictional data." />
+<style>
+  :root {
+    --ink: #17202c;
+    --muted: #66758a;
+    --line: #d9e1ea;
+    --paper: #ffffff;
+    --shell: #eef3f7;
+    --teal: #087f8c;
+    --teal-dark: #075d68;
+    --navy: #102235;
+    --coral: #c55b4b;
+    --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--shell); color: var(--ink); line-height: 1.5; }
+
+  .topbar {
+    background: var(--navy); color: #eaf2f8; padding: 14px 24px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .mark {
+    width: 34px; height: 34px; border-radius: 8px; flex: none;
+    background: linear-gradient(135deg, #2aa4a8, #d27b62);
+    display: grid; place-items: center; color: #fff; font-weight: 800;
+  }
+  .topbar h1 { font-size: 17px; margin: 0; font-weight: 700; }
+  .topbar .sub { color: #adc2d3; font-size: 13px; }
+  .topbar a { margin-left: auto; color: #eaf2f8; font-size: 13.5px; text-decoration: none; border: 1px solid rgba(255,255,255,0.25); border-radius: 6px; padding: 6px 12px; }
+  .topbar a:hover { border-color: #2aa4a8; }
+
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px 24px 60px; }
+  .banner {
+    font-size: 13px; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px;
+    background: rgba(197, 91, 75, 0.10); border: 1px solid rgba(197, 91, 75, 0.4);
+  }
+  .banner b { color: var(--coral); }
+  .runtime {
+    font-size: 13px; color: var(--muted); background: var(--paper); border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 16px;
+  }
+
+  .grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr); gap: 20px; align-items: start; }
+  @media (max-width: 940px) { .grid { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; }
+  .panel-head { padding: 12px 16px; border-bottom: 1px solid var(--line); font-weight: 700; font-size: 14px; display:flex; gap:10px; align-items:center; }
+  .panel-body { padding: 16px; }
+
+  .roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .role {
+    border: 1px solid var(--line); border-radius: 8px; padding: 11px 12px; cursor: pointer;
+    background: #fbfdff; text-align: left; font: inherit;
+  }
+  .role strong { display: block; font-size: 14px; }
+  .role span { font-size: 12px; color: var(--muted); }
+  .role.active { border-color: var(--teal); background: #edfafa; }
+
+  textarea {
+    width: 100%; min-height: 92px; resize: vertical; font: 14px/1.5 inherit;
+    border: 1px solid #c6d1dd; border-radius: 8px; padding: 11px; background: #fbfdff; color: var(--ink);
+  }
+  textarea:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(8,127,140,0.13); }
+
+  .samples { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+  .chip {
+    border: 1px solid var(--line); background: #fbfdff; border-radius: 999px;
+    padding: 6px 12px; font-size: 12.5px; cursor: pointer; color: var(--ink); font-family: inherit;
+  }
+  .chip:hover { border-color: var(--teal); color: var(--teal-dark); }
+
+  .run-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  button.ask {
+    background: var(--teal); color: #fff; border: 0; border-radius: 8px;
+    padding: 11px 22px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  button.ask:hover:enabled { background: var(--teal-dark); }
+  button.ask:disabled { opacity: 0.55; cursor: wait; }
+  #status { font-size: 13px; color: var(--muted); }
+  #status.error { color: var(--coral); }
+
+  .answer-meta { font-size: 12.5px; color: var(--muted); }
+  pre.answer {
+    white-space: pre-wrap; margin: 0; font: 13.5px/1.6 inherit; color: #243145;
+  }
+  .empty { color: var(--muted); font-size: 14px; margin: 0; }
+
+  ul.sources { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  ul.sources li { border: 1px solid var(--line); border-left: 4px solid var(--teal); border-radius: 8px; padding: 10px 12px; background: #fbfdff; font-size: 13.5px; }
+  ul.sources b { display: block; margin-bottom: 3px; }
+  ul.sources .snip { color: var(--muted); font-size: 12.5px; }
+  .score-tag { float: right; font-family: var(--mono); font-size: 11.5px; color: var(--teal-dark); }
+
+  ol.trace { margin: 0; padding-left: 20px; font-size: 13px; color: #405166; display: grid; gap: 5px; }
+
+  .hidden { display: none; }
+  footer { margin-top: 34px; color: var(--muted); font-size: 13px; text-align: center; }
+  footer a { color: var(--teal-dark); }
+  h3.sec { font-size: 13.5px; margin: 18px 0 8px; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="mark">N</div>
+    <div>
+      <h1>Fictional Clinic — role-aware knowledge agent</h1>
+      <div class="sub">same retrieved evidence · different answer for patient vs doctor</div>
+    </div>
+    <a href="https://github.com/Diya-sudheer/medical-knowledge-agent">GitHub ↗</a>
+  </div>
+
+  <div class="wrap">
+    <div class="banner">
+      <b>Intentionally fictional medical data.</b> Every condition here is invented (Luma Cough Syndrome,
+      Amber Fever…). Nothing on this page is medical advice — it demonstrates role-aware, source-grounded answering.
+    </div>
+    <div class="runtime">
+      This demo runs the repository's <b>actual Python pipeline</b> — lexical retriever + deterministic role-aware
+      responder — in your browser via Pyodide/WebAssembly. No server, no API key; questions never leave your machine.
+    </div>
+
+    <div class="grid">
+      <section class="panel">
+        <div class="panel-head">1 · Ask as…</div>
+        <div class="panel-body">
+          <div class="roles" id="roles">
+            <button class="role active" data-role="patient"><strong>Patient</strong><span>plain language, cautious, safety-first</span></button>
+            <button class="role" data-role="general"><strong>Visitor</strong><span>clear overview, low jargon</span></button>
+            <button class="role" data-role="doctor"><strong>Doctor</strong><span>clinical structure, protocol focus</span></button>
+          </div>
+
+          <textarea id="question" spellcheck="false">How does the clinic handle Amber Fever follow-up?</textarea>
+          <div class="samples">
+            <button class="chip">How does the clinic handle Amber Fever follow-up?</button>
+            <button class="chip">I have a dry glowing cough after blue lantern dust exposure.</button>
+            <button class="chip">When is a Moonleaf Sleep Clinic referral considered?</button>
+            <button class="chip">What should I know about breast cancer?</button>
+          </div>
+
+          <div class="run-row">
+            <button class="ask" id="run" disabled>Generate answer</button>
+            <span id="status">Loading Python runtime… (~15&nbsp;MB, cached after first visit)</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">2 · Answer <span class="answer-meta" id="meta"></span></div>
+        <div class="panel-body">
+          <p class="empty" id="placeholder">Pick a role, ask a question — then switch roles and ask the <b>same</b> question to see the answer change.</p>
+          <div id="result" class="hidden">
+            <pre class="answer" id="answer"></pre>
+            <h3 class="sec">Retrieved sources</h3>
+            <ul class="sources" id="sources"></ul>
+            <h3 class="sec">Why this answer (trace)</h3>
+            <ol class="trace" id="trace"></ol>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      Retrieval quality and role separation are <a href="https://github.com/Diya-sudheer/medical-knowledge-agent/blob/main/evaluation/RESULTS.md">measured, not claimed</a>
+      · also benchmarked on 1,500 real MedQuAD passages · fictional corpus, deterministic engine.
+    </footer>
+  </div>
+
+<script>
+const PKG = ["__init__", "config", "models", "prompts", "rag", "responder"];
+const DOCS = ["amber_fever_followup.md", "glowstone_allergy.md", "luma_cough_syndrome.md", "moonleaf_sleep_clinic.md"];
+const $ = (id) => document.getElementById(id);
+let askPy = null;
+let role = "patient";
+
+function setStatus(text, isError = false) {
+  const el = $("status");
+  el.textContent = text;
+  el.classList.toggle("error", isError);
+}
+
+async function fetchText(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(`fetch ${path} -> ${r.status}`);
+  return r.text();
+}
+
+async function boot() {
+  try {
+    const pyodide = await loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/" });
+    setStatus("Loading pydantic…");
+    await pyodide.loadPackage(["pydantic"]);
+    setStatus("Installing python-dotenv…");
+    await pyodide.loadPackage(["micropip"]);
+    await pyodide.runPythonAsync(`
+import micropip
+await micropip.install("python-dotenv")
+`);
+    setStatus("Loading the clinic pipeline…");
+    const mkdirs = ["src", "src/fictional_clinic", "data", "data/clinic_docs"];
+    for (const d of mkdirs) { try { pyodide.FS.mkdir(d); } catch (e) { /* exists */ } }
+    for (const m of PKG) {
+      pyodide.FS.writeFile(`src/fictional_clinic/${m}.py`, await fetchText(`py/fictional_clinic/${m}.py`));
+    }
+    for (const d of DOCS) {
+      pyodide.FS.writeFile(`data/clinic_docs/${d}`, await fetchText(`data/clinic_docs/${d}`));
+    }
+    pyodide.runPython(`
+import json, sys
+sys.path.insert(0, "/home/pyodide/src")
+from fictional_clinic.rag import LocalRetriever
+from fictional_clinic.responder import LocalTemplateEngine
+from fictional_clinic.models import Role
+
+_retriever = LocalRetriever()
+_engine = LocalTemplateEngine()
+
+def ask(question, role_name):
+    role = Role(role_name)
+    sources = _retriever.search(question)
+    answer = _engine.answer(role, question, sources)
+    trace = [
+        "Searched the fictional clinic knowledge base with stemmed, stopword-filtered terms.",
+        f"Retrieved {len(sources)} source(s) that share meaningful terms with the question.",
+        f"Rewrote the same evidence for the '{role_name}' audience (structure, tone, and depth change; facts do not).",
+        "No diagnosis or treatment claims beyond the retrieved context; abstains when nothing relevant is found.",
+    ]
+    return json.dumps({
+        "answer": answer,
+        "sources": [
+            {"title": s.title, "snippet": s.snippet, "score": s.score}
+            for s in sources
+        ],
+        "trace": trace,
+    })
+`);
+    askPy = pyodide.globals.get("ask");
+    $("run").disabled = false;
+    setStatus("Ready — the real pipeline is loaded.");
+  } catch (err) {
+    console.error(err);
+    setStatus("Could not load the Python runtime: " + err.message, true);
+  }
+}
+
+function render(data, roleName) {
+  $("placeholder").classList.add("hidden");
+  $("result").classList.remove("hidden");
+  $("meta").textContent = `· ${roleName} mode · ${data.sources.length} source(s)`;
+  $("answer").textContent = data.answer;
+  $("sources").innerHTML = data.sources.length
+    ? data.sources.map((s) =>
+        `<li><span class="score-tag">score ${s.score}</span><b>${esc(s.title)}</b><span class="snip">${esc(s.snippet)}</span></li>`
+      ).join("")
+    : `<li style="border-left-color: var(--coral)"><b>No relevant sources</b><span class="snip">The corpus has nothing on this topic, so the agent abstains instead of inventing a protocol.</span></li>`;
+  $("trace").innerHTML = data.trace.map((t) => `<li>${esc(t)}</li>`).join("");
+}
+
+function esc(t) {
+  return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+$("run").addEventListener("click", () => {
+  const q = $("question").value.trim();
+  if (!q || !askPy) return;
+  try {
+    render(JSON.parse(askPy(q, role)), role);
+  } catch (err) {
+    console.error(err);
+    setStatus("Analysis failed: " + err.message, true);
+  }
+});
+
+document.querySelectorAll(".role").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".role").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    role = btn.dataset.role;
+    if (!$("run").disabled && !$("result").classList.contains("hidden")) $("run").click();
+  });
+});
+
+document.querySelectorAll(".chip").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    $("question").value = chip.textContent;
+    if (!$("run").disabled) $("run").click();
+  });
+});
+</script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js" onload="boot()"></script>
+</body>
+</html>
