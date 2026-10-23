@@ -1,6 +1,37 @@
-from fictional_clinic.models import Role
+import pytest
+
+from fictional_clinic.models import Role, Source
 from fictional_clinic.rag import LocalRetriever
 from fictional_clinic.responder import LocalTemplateEngine
+
+FICTIONAL_WARNING = "fictional clinic notes are invented training material"
+REAL_SOURCE = Source(
+    title="DBpedia: Cough",
+    path="http://dbpedia.org/resource/Cough",
+    snippet="A cough is a sudden expulsion of air.",
+    score=0.0,
+    topics=["Disease"],
+)
+
+
+@pytest.mark.parametrize("role", list(Role))
+def test_every_role_labels_fictional_notes(role):
+    sources = LocalRetriever().search("What should I know about Luma Cough Syndrome?")
+
+    answer = LocalTemplateEngine().answer(role, "What should I know about Luma Cough?", sources)
+
+    assert "Luma Cough Syndrome (fictional clinic note):" in answer
+    assert FICTIONAL_WARNING not in answer  # nothing real to tell it apart from
+
+
+def test_mixed_sources_get_a_warning_line():
+    sources = LocalRetriever().search("What should I know about Luma Cough Syndrome?")
+
+    answer = LocalTemplateEngine().answer(Role.patient, "Cough?", [*sources, REAL_SOURCE])
+
+    assert "DBpedia: Cough: A cough" in answer
+    assert "DBpedia: Cough (fictional" not in answer
+    assert FICTIONAL_WARNING in answer
 
 
 def test_patient_and_doctor_outputs_use_different_formats():

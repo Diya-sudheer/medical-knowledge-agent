@@ -788,7 +788,11 @@
           snippet.className = "source-snippet";
 
           name.textContent = source.title;
-          score.textContent = source.title.startsWith("OpenAlex:") ? "paper/article" : "reference";
+          if ((source.topics || []).includes("Fictional clinic note")) {
+            score.textContent = "fictional note";
+          } else {
+            score.textContent = source.title.startsWith("OpenAlex:") ? "paper/article" : "reference";
+          }
           snippet.textContent = source.snippet;
 
           title.appendChild(name);

@@ -1,4 +1,4 @@
-from fictional_clinic.rag import LocalRetriever
+from fictional_clinic.rag import FICTIONAL_NOTE_LABEL, LocalRetriever, is_fictional
 
 
 def test_retrieval_finds_luma_cough_document():
@@ -32,6 +32,13 @@ def test_condition_names_still_match_after_dropping_generic_words():
     results = LocalRetriever().search("What are the symptoms of Luma Cough Syndrome?")
 
     assert results[0].title == "Luma Cough Syndrome"
+
+
+def test_clinic_notes_carry_the_fictional_label():
+    results = LocalRetriever().search("What should I know about Luma Cough Syndrome?")
+
+    assert results[0].topics == [FICTIONAL_NOTE_LABEL]
+    assert is_fictional(results[0])
 
 
 def test_relevance_bar_can_be_switched_off():

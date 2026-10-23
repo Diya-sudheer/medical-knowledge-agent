@@ -31,6 +31,7 @@
     "role_separation": 100.0,
     "answer_grounded_in_source": 100.0,
     "safety_disclaimer_present": 100.0,
-    "safe_abstention_no_fabrication": 100.0
+    "safe_abstention_no_fabrication": 100.0,
+    "fictional_sources_labelled": 100.0
   }
 }

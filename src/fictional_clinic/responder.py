@@ -3,6 +3,7 @@ from __future__ import annotations
 from fictional_clinic.config import Settings
 from fictional_clinic.models import Role, Source
 from fictional_clinic.prompts import DISCLAIMER, build_prompt
+from fictional_clinic.rag import is_fictional
 
 
 class ResponseEngine:
@@ -135,7 +136,19 @@ def _format_sources(sources: list[Source]) -> str:
             "- Can you tell me more? For example: the main symptom, how long it has lasted, "
             "or what you were exposed to."
         )
-    return "\n".join(f"- {source.title}: {source.snippet}" for source in sources)
+    lines = [f"- {_source_name(source)}: {source.snippet}" for source in sources]
+    if any(is_fictional(source) for source in sources) and not all(
+        is_fictional(source) for source in sources
+    ):
+        lines.append(
+            "- The fictional clinic notes are invented training material and say nothing "
+            "about real illnesses."
+        )
+    return "\n".join(lines)
+
+
+def _source_name(source: Source) -> str:
+    return f"{source.title} (fictional clinic note)" if is_fictional(source) else source.title
 
 
 def _patient_takeaways(sources: list[Source]) -> str:
