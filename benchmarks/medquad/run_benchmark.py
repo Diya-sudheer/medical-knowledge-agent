@@ -21,9 +21,8 @@ import time
 from datetime import date
 from pathlib import Path
 
-from fictional_clinic.semantic import DEFAULT_MODEL, SemanticRetriever
-
 from benchmarks.medquad.lexical import BM25Index
+from fictional_clinic.semantic import DEFAULT_MODEL, SemanticRetriever
 
 HERE = Path(__file__).resolve().parent
 DATA = HERE / "data"

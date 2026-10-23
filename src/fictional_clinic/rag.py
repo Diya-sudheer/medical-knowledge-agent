@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from fictional_clinic.config import DATA_DIR
 from fictional_clinic.models import Source
-
 
 TOKEN_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9-]+")
 STOPWORDS = {

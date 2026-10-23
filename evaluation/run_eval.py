@@ -19,12 +19,11 @@ import json
 from datetime import date
 from pathlib import Path
 
+from evaluation.cases import IN_SCOPE, MORPHOLOGICAL, OUT_OF_SCOPE, RetrievalCase
 from fictional_clinic.models import Role
 from fictional_clinic.prompts import DISCLAIMER
 from fictional_clinic.rag import LocalRetriever
 from fictional_clinic.responder import LocalTemplateEngine
-
-from evaluation.cases import IN_SCOPE, MORPHOLOGICAL, OUT_OF_SCOPE, RetrievalCase
 
 HERE = Path(__file__).resolve().parent
 
@@ -176,7 +175,7 @@ def evaluate() -> dict:
             "paraphrase": sum(1 for c in IN_SCOPE if c.kind == "paraphrase"),
             "morphological": len(MORPHOLOGICAL),
             "out_of_scope": len(OUT_OF_SCOPE),
-            "roles_tested": list(r.value for r in REQUIRED_HEADINGS),
+            "roles_tested": [r.value for r in REQUIRED_HEADINGS],
         },
         "retrieval": {
             "top1_accuracy": _pct(top1_hits, len(IN_SCOPE)),

@@ -18,7 +18,9 @@ dependencies = [
 dev = [
   "pytest>=8.2.0",
   "pytest-cov>=5.0.0",
-  "ruff>=0.5.0"
+  # Pinned: an unpinned ruff picked up new default rules and failed CI on
+  # code that had not changed. Bump deliberately.
+  "ruff==0.17.2"
 ]
 benchmark = [
   "sentence-transformers>=3.0",
@@ -42,6 +44,10 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI declares dependencies as Depends(...) defaults by design.
+extend-immutable-calls = ["fastapi.Depends"]
 
 [tool.coverage.run]
 # semantic.py needs the optional [benchmark] extras (torch); it is exercised by

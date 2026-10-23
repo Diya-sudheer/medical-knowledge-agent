@@ -58,21 +58,23 @@ class EvidenceAgent:
             steps.append("Live open knowledge graph lookup is disabled in server settings.")
             return AgentResult(sources=sources, query_plan=query_plan, steps=steps)
 
+        # Each live source is optional: any failure is recorded in the trace and
+        # the answer continues without it, so the broad catches are intended.
         try:
             wikidata_sources = self.wikidata_client.search(question)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             steps.append(f"Live Wikidata lookup failed: {exc.__class__.__name__}.")
             wikidata_sources = []
 
         try:
             dbpedia_sources = self.dbpedia_client.search(question)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             steps.append(f"Live DBpedia lookup failed: {exc.__class__.__name__}.")
             dbpedia_sources = []
 
         try:
             openalex_sources = self.openalex_client.search(question)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             steps.append(f"Live OpenAlex lookup failed: {exc.__class__.__name__}.")
             openalex_sources = []
 

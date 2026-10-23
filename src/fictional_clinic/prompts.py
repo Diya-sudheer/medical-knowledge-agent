@@ -1,6 +1,5 @@
 from fictional_clinic.models import Role, Source
 
-
 DISCLAIMER = (
     "Fictional learning demo only. This is not medical advice and must not be used for "
     "real diagnosis, treatment, triage, or patient care."
