@@ -130,7 +130,11 @@ def build_engine(settings: Settings) -> ResponseEngine:
 
 def _format_sources(sources: list[Source]) -> str:
     if not sources:
-        return "- I could not find a relevant local clinic document or live knowledge source."
+        return (
+            "- I could not find a relevant local clinic document or live knowledge source.\n"
+            "- Can you tell me more? For example: the main symptom, how long it has lasted, "
+            "or what you were exposed to."
+        )
     return "\n".join(f"- {source.title}: {source.snippet}" for source in sources)
 
 

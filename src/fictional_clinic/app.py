@@ -8,7 +8,6 @@ from fictional_clinic.prompts import DISCLAIMER
 from fictional_clinic.rag import LocalRetriever
 from fictional_clinic.responder import ResponseEngine, build_engine
 
-
 app = FastAPI(
     title="Fictional Clinic Role-Aware LLM",
     description="Educational RAG and fine-tuning starter with synthetic clinic data.",

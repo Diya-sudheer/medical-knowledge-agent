@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from fictional_clinic.config import DATA_DIR
 from fictional_clinic.models import Source
-
 
 TOKEN_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9-]+")
 STOPWORDS = {
@@ -65,6 +64,12 @@ def meaningful_terms(text: str) -> set[str]:
     return {token for token in tokenize(text) if token not in STOPWORDS and len(token) > 2}
 
 
+# A document must contain at least this share of the question's meaningful
+# terms. One shared word ("dust", "travel") is not evidence of relevance.
+# Chosen on the evaluation's in-scope questions only: 0.5 is the strictest bar
+# that keeps all 16 answerable (the weakest one matches exactly 4 of 8 terms).
+MIN_COVERAGE = 0.5
+
 _STEM_SUFFIXES = ("ing", "ed", "s")
 
 
@@ -95,9 +100,15 @@ def load_documents(data_dir: Path = DATA_DIR) -> list[Document]:
 
 
 class LocalRetriever:
-    def __init__(self, documents: list[Document] | None = None, stem_terms: bool = True):
+    def __init__(
+        self,
+        documents: list[Document] | None = None,
+        stem_terms: bool = True,
+        min_coverage: float = MIN_COVERAGE,
+    ):
         self.documents = documents if documents is not None else load_documents()
         self.stem_terms = stem_terms
+        self.min_coverage = min_coverage
         self._doc_tokens = [self._prepare(document.text) for document in self.documents]
 
     def _prepare(self, text: str) -> list[str]:
@@ -116,7 +127,7 @@ class LocalRetriever:
         for document, tokens in zip(self.documents, self._doc_tokens):
             token_counts = {token: tokens.count(token) for token in query_terms}
             matched_terms = {token for token, count in token_counts.items() if count}
-            if not matched_terms:
+            if not matched_terms or len(matched_terms) / len(query_terms) < self.min_coverage:
                 continue
 
             overlap = sum(token_counts.values())

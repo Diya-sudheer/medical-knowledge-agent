@@ -19,12 +19,11 @@ import json
 from datetime import date
 from pathlib import Path
 
+from evaluation.cases import IN_SCOPE, MORPHOLOGICAL, OUT_OF_SCOPE, RetrievalCase
 from fictional_clinic.models import Role
 from fictional_clinic.prompts import DISCLAIMER
 from fictional_clinic.rag import LocalRetriever
 from fictional_clinic.responder import LocalTemplateEngine
-
-from evaluation.cases import IN_SCOPE, MORPHOLOGICAL, OUT_OF_SCOPE, RetrievalCase
 
 HERE = Path(__file__).resolve().parent
 
@@ -159,10 +158,16 @@ def evaluate() -> dict:
 
     safe_abstain_total = len(OUT_OF_SCOPE) * len(REQUIRED_HEADINGS)
 
+    # --- Relevance bar: the morphological questions are vague and share a
+    # single term with their document, so most fall below the bar on purpose
+    # and get a request for more detail instead of a guess. ---
+    vague_answered = sum(1 for case in MORPHOLOGICAL if retriever.search(case.question))
+
     # --- Ablation: does stemming actually help? Compare top-1 on the hard
-    # morphological-variant slice with stemming off vs on. ---
-    lexical = LocalRetriever(stem_terms=False)
-    stemmed = LocalRetriever(stem_terms=True)
+    # morphological-variant slice with stemming off vs on. Stemming is about
+    # matching word forms, not about when to refuse, so the bar is off here. ---
+    lexical = LocalRetriever(stem_terms=False, min_coverage=0.0)
+    stemmed = LocalRetriever(stem_terms=True, min_coverage=0.0)
 
     return {
         "dataset": {
@@ -170,13 +175,18 @@ def evaluate() -> dict:
             "paraphrase": sum(1 for c in IN_SCOPE if c.kind == "paraphrase"),
             "morphological": len(MORPHOLOGICAL),
             "out_of_scope": len(OUT_OF_SCOPE),
-            "roles_tested": list(r.value for r in REQUIRED_HEADINGS),
+            "roles_tested": [r.value for r in REQUIRED_HEADINGS],
         },
         "retrieval": {
             "top1_accuracy": _pct(top1_hits, len(IN_SCOPE)),
             "recall_at_3": _pct(recall3_hits, len(IN_SCOPE)),
             "mrr": round(reciprocal_ranks / len(IN_SCOPE), 3) if IN_SCOPE else 0.0,
             "out_of_scope_abstention": _pct(abstain_hits, len(OUT_OF_SCOPE)),
+        },
+        "relevance_bar": {
+            "min_coverage": retriever.min_coverage,
+            "vague_answered": _pct(vague_answered, len(MORPHOLOGICAL)),
+            "vague_asked_for_detail": _pct(len(MORPHOLOGICAL) - vague_answered, len(MORPHOLOGICAL)),
         },
         "stemming_ablation": {
             "lexical_top1_morphological": _top1_rate(lexical, MORPHOLOGICAL),
@@ -199,6 +209,7 @@ def format_markdown(metrics: dict) -> str:
     ret = metrics["retrieval"]
     res = metrics["responder"]
     abl = metrics["stemming_ablation"]
+    bar = metrics["relevance_bar"]
     roles = ", ".join(ds["roles_tested"])
     return f"""# Evaluation Results
 
@@ -233,11 +244,20 @@ questions, evaluated across roles: {roles}.
 > forcing an irrelevant match. **Safe abstention** means the responder then says
 > it has no evidence rather than inventing a protocol.
 
+## Relevance bar
+
+A document counts as relevant only if it contains at least
+{round(bar["min_coverage"] * 100)}% of the question's meaningful terms; one shared word is
+not enough. On the {ds["morphological"]} vague one-word questions below, {bar["vague_answered"]}%
+are still answered and {bar["vague_asked_for_detail"]}% get a request for more detail
+instead of a guess.
+
 ## Retrieval robustness: does stemming help? (ablation)
 
 Top-1 accuracy with stemming **off vs on**, on {ds["morphological"]} hard
 morphological-variant queries where the only linking term appears as a plural or
 verb form (e.g. *coughing* vs *cough*, *interruptions* vs *interruption*).
+Measured with the relevance bar off, since it tests word matching, not refusal.
 
 | Slice | Lexical (no stemming) | + Stemming | Δ |
 | --- | --- | --- | --- |
@@ -251,11 +271,11 @@ out-of-scope abstention.
 
 def _print_table(metrics: dict) -> None:
     print("\n=== Fictional Clinic Agent -- Evaluation ===")
-    for section in ("retrieval", "responder", "stemming_ablation"):
+    for section in ("retrieval", "relevance_bar", "responder", "stemming_ablation"):
         print(f"\n[{section}]")
         for name, value in metrics[section].items():
             label = name.replace("_", " ")
-            suffix = "" if name == "mrr" else "%"
+            suffix = "" if name in ("mrr", "min_coverage") else "%"
             print(f"  {label:<42} {value}{suffix}")
 
 

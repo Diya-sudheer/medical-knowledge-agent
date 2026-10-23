@@ -8,7 +8,6 @@ from fictional_clinic.models import Role
 from fictional_clinic.rag import LocalRetriever
 from fictional_clinic.responder import LocalTemplateEngine
 
-
 QUESTIONS = [
     "What should I know about Luma Cough Syndrome?",
     "How does the clinic handle Amber Fever follow-up?",

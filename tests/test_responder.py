@@ -34,6 +34,13 @@ def test_patient_output_is_safety_oriented():
     assert "Plain-language takeaways" in answer
 
 
+def test_no_match_asks_for_more_detail():
+    answer = LocalTemplateEngine().answer(Role.patient, "What is the best travel insurance?", [])
+
+    assert "could not find a relevant" in answer
+    assert "Can you tell me more?" in answer
+
+
 def test_doctor_output_includes_protocol_structure():
     answer = LocalTemplateEngine().answer(
         Role.doctor,
