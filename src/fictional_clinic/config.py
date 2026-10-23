@@ -16,6 +16,7 @@ class Settings(BaseModel):
     openai_fine_tuned_model: str | None = None
     use_openai: bool = False
     enable_live_kg: bool = False
+    openalex_api_key: str | None = None
 
     @property
     def response_model(self) -> str:
@@ -31,4 +32,5 @@ def get_settings() -> Settings:
         openai_fine_tuned_model=os.getenv("OPENAI_FINE_TUNED_MODEL") or None,
         use_openai=os.getenv("USE_OPENAI", "false").lower() in {"1", "true", "yes"},
         enable_live_kg=os.getenv("ENABLE_LIVE_KG", "false").lower() in {"1", "true", "yes"},
+        openalex_api_key=os.getenv("OPENALEX_API_KEY") or None,
     )

@@ -154,7 +154,19 @@ ENABLE_LIVE_KG=true
 ```
 
 Each request still decides whether to include the live lookup, and those results
-are treated as background context, not medical authority.
+are treated as background context, not medical authority. Only results that their
+own source labels as medical are kept: a DBpedia medical ontology type (Disease,
+Drug, AnatomicalStructure, ...), or an OpenAlex paper in Health Sciences or in a
+medical Life Sciences field (genetics, immunology, neuroscience, pharmacology). Untyped results
+are dropped, and the agent's trace names each one it dropped.
+
+Without a key, OpenAlex requests share a small free daily budget per IP address. A
+free key from [openalex.org](https://openalex.org) (Settings → API key) gives the agent
+its own budget:
+
+```text
+OPENALEX_API_KEY=your_key
+```
 
 ## Run the tests and the evaluation
 

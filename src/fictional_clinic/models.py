@@ -21,6 +21,9 @@ class Source(BaseModel):
     path: str
     snippet: str
     score: float
+    # The source's own classification: DBpedia ontology types, or the OpenAlex
+    # domain and field. Empty when the source gives none.
+    topics: list[str] = Field(default_factory=list)
 
 
 class QueryPlan(BaseModel):
