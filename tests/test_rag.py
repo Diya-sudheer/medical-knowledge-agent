@@ -22,6 +22,18 @@ def test_one_shared_word_is_not_enough():
     assert results == []
 
 
+def test_generic_medical_words_do_not_match_clinic_notes():
+    # "syndrome" and "symptoms" say what kind of question it is, not which condition.
+    assert LocalRetriever().search("What is Nail-patella syndrome?") == []
+    assert LocalRetriever().search("What are the symptoms of asthma?") == []
+
+
+def test_condition_names_still_match_after_dropping_generic_words():
+    results = LocalRetriever().search("What are the symptoms of Luma Cough Syndrome?")
+
+    assert results[0].title == "Luma Cough Syndrome"
+
+
 def test_relevance_bar_can_be_switched_off():
     results = LocalRetriever(min_coverage=0.0).search("What is the best travel insurance?")
 
