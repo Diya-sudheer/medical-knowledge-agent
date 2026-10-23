@@ -22,7 +22,7 @@ from pathlib import Path
 from evaluation.cases import IN_SCOPE, MORPHOLOGICAL, OUT_OF_SCOPE, RetrievalCase
 from fictional_clinic.models import Role
 from fictional_clinic.prompts import DISCLAIMER
-from fictional_clinic.rag import LocalRetriever
+from fictional_clinic.rag import LocalRetriever, is_fictional
 from fictional_clinic.responder import LocalTemplateEngine
 
 HERE = Path(__file__).resolve().parent
@@ -158,6 +158,22 @@ def evaluate() -> dict:
 
     safe_abstain_total = len(OUT_OF_SCOPE) * len(REQUIRED_HEADINGS)
 
+    # Every fictional note an answer cites must be labelled as fictional, in
+    # every role (including "general", which has no heading checks above).
+    labelled_ok = 0
+    labelled_total = 0
+    for case in IN_SCOPE:
+        sources = retriever.search(case.question)
+        for role in Role:
+            answer = engine.answer(role, case.question, sources)
+            labelled_total += 1
+            if all(
+                f"{source.title} (fictional clinic note)" in answer
+                for source in sources
+                if is_fictional(source)
+            ):
+                labelled_ok += 1
+
     # --- Relevance bar: the morphological questions are vague and share a
     # single term with their document, so most fall below the bar on purpose
     # and get a request for more detail instead of a guess. ---
@@ -200,6 +216,7 @@ def evaluate() -> dict:
             "answer_grounded_in_source": _pct(grounded_ok, grounded_total),
             "safety_disclaimer_present": _pct(disclaimer_ok, disclaimer_total),
             "safe_abstention_no_fabrication": _pct(safe_abstain_ok, safe_abstain_total),
+            "fictional_sources_labelled": _pct(labelled_ok, labelled_total),
         },
     }
 
@@ -238,6 +255,7 @@ questions, evaluated across roles: {roles}.
 | Answer grounded in retrieved source | {res["answer_grounded_in_source"]}% |
 | Safety disclaimer present | {res["safety_disclaimer_present"]}% |
 | Safe abstention on out-of-scope (no fabrication) | {res["safe_abstention_no_fabrication"]}% |
+| Fictional sources labelled as fictional (all roles) | {res["fictional_sources_labelled"]}% |
 
 > **Out-of-scope abstention** means the retriever returns nothing for unrelated
 > real-world questions (e.g. "What is the capital of France?") instead of

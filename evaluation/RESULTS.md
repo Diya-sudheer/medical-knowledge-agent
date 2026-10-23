@@ -25,6 +25,7 @@ questions, evaluated across roles: patient, doctor.
 | Answer grounded in retrieved source | 100.0% |
 | Safety disclaimer present | 100.0% |
 | Safe abstention on out-of-scope (no fabrication) | 100.0% |
+| Fictional sources labelled as fictional (all roles) | 100.0% |
 
 > **Out-of-scope abstention** means the retriever returns nothing for unrelated
 > real-world questions (e.g. "What is the capital of France?") instead of

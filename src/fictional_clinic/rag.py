@@ -49,6 +49,11 @@ STOPWORDS = {
 }
 
 
+# Every local document is invented training material. The label travels with
+# each source, so answers and pages can say so right next to it.
+FICTIONAL_NOTE_LABEL = "Fictional clinic note"
+
+
 @dataclass(frozen=True)
 class Document:
     title: str
@@ -172,9 +177,14 @@ class LocalRetriever:
                 path=str(document.path.relative_to(DATA_DIR.parent.parent)),
                 snippet=_best_snippet(document.text, query_terms),
                 score=round(score, 4),
+                topics=[FICTIONAL_NOTE_LABEL],
             )
             for score, document in scored[:limit]
         ]
+
+
+def is_fictional(source: Source) -> bool:
+    return FICTIONAL_NOTE_LABEL in source.topics
 
 
 def _best_snippet(text: str, query_terms: set[str], max_chars: int = 420) -> str:

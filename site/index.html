@@ -97,6 +97,7 @@
   ul.sources b { display: block; margin-bottom: 3px; }
   ul.sources .snip { color: var(--muted); font-size: 12.5px; }
   .score-tag { float: right; font-family: var(--mono); font-size: 11.5px; color: var(--teal-dark); }
+  .fiction-tag { font-size: 11.5px; font-weight: 600; color: var(--coral); margin-left: 6px; }
 
   ol.trace { margin: 0; padding-left: 20px; font-size: 13px; color: #405166; display: grid; gap: 5px; }
 
@@ -214,7 +215,7 @@ await micropip.install("python-dotenv")
     pyodide.runPython(`
 import json, sys
 sys.path.insert(0, "/home/pyodide/src")
-from fictional_clinic.rag import LocalRetriever
+from fictional_clinic.rag import LocalRetriever, is_fictional
 from fictional_clinic.responder import LocalTemplateEngine
 from fictional_clinic.models import Role
 
@@ -234,7 +235,8 @@ def ask(question, role_name):
     return json.dumps({
         "answer": answer,
         "sources": [
-            {"title": s.title, "snippet": s.snippet, "score": s.score}
+            {"title": s.title, "snippet": s.snippet, "score": s.score,
+             "fictional": is_fictional(s)}
             for s in sources
         ],
         "trace": trace,
@@ -256,7 +258,7 @@ function render(data, roleName) {
   $("answer").textContent = data.answer;
   $("sources").innerHTML = data.sources.length
     ? data.sources.map((s) =>
-        `<li><span class="score-tag">score ${s.score}</span><b>${esc(s.title)}</b><span class="snip">${esc(s.snippet)}</span></li>`
+        `<li><span class="score-tag">score ${s.score}</span><b>${esc(s.title)}${s.fictional ? '<span class="fiction-tag">fictional note</span>' : ""}</b><span class="snip">${esc(s.snippet)}</span></li>`
       ).join("")
     : `<li style="border-left-color: var(--coral)"><b>No relevant sources</b><span class="snip">The corpus has nothing on this topic, so the agent abstains instead of inventing a protocol.</span></li>`;
   $("trace").innerHTML = data.trace.map((t) => `<li>${esc(t)}</li>`).join("");
