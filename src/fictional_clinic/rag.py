@@ -90,6 +90,32 @@ def stemmed_terms(text: str) -> set[str]:
     return {stem(term) for term in meaningful_terms(text)}
 
 
+# Words that say what KIND of medical question it is, or name illnesses in
+# general, but not WHICH condition: MedQuAD's question types (symptoms,
+# treatment, causes, inheritance, ...) and disease-naming words. Like "what" or
+# "should", they are no evidence that a clinic note is relevant, so
+# "What is Nail-patella syndrome?" must not match Luma Cough Syndrome.
+GENERIC_MEDICAL_WORDS = frozenset(
+    {
+        # MedQuAD question types
+        "symptom", "symptoms", "sign", "signs",
+        "treatment", "treatments", "treat", "treated",
+        "cause", "causes", "caused",
+        "inherited", "inheritance", "genetic", "change", "changes", "related",
+        "affected", "people", "outlook", "prognosis",
+        "research", "clinical", "trial", "trials",
+        "diagnosis", "diagnose", "diagnosed", "test", "tests", "exam", "exams",
+        "prevent", "prevention", "risk", "complication", "complications",
+        "stage", "stages", "information", "consideration", "considerations",
+        "susceptible", "support", "group", "groups",
+        # disease-naming words
+        "syndrome", "syndromes", "disease", "diseases", "disorder", "disorders",
+        "condition", "conditions", "deficiency", "type",
+    }
+)
+_GENERIC_MEDICAL_STEMS = frozenset(stem(word) for word in GENERIC_MEDICAL_WORDS)
+
+
 def load_documents(data_dir: Path = DATA_DIR) -> list[Document]:
     documents: list[Document] = []
     for path in sorted(data_dir.glob("*.md")):
@@ -116,7 +142,9 @@ class LocalRetriever:
         return [stem(token) for token in tokens] if self.stem_terms else tokens
 
     def _terms(self, text: str) -> set[str]:
-        return stemmed_terms(text) if self.stem_terms else meaningful_terms(text)
+        if self.stem_terms:
+            return stemmed_terms(text) - _GENERIC_MEDICAL_STEMS
+        return meaningful_terms(text) - GENERIC_MEDICAL_WORDS
 
     def search(self, query: str, limit: int = 3) -> list[Source]:
         query_terms = self._terms(query)

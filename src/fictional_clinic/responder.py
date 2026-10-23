@@ -61,7 +61,7 @@ class LocalTemplateEngine(ResponseEngine):
                 "Why this answer\n"
                 "- I matched your question against retrieved sources with meaningful medical or protocol terms.\n"
                 f"{evidence_reason}"
-                "- I did not use unrelated sources just because they share generic words like 'what' or 'should'.\n"
+                "- I did not use unrelated sources just because they share generic words like 'what', 'should' or 'symptoms'.\n"
                 "- I am keeping the answer cautious because this project is educational and cannot confirm a diagnosis.\n\n"
                 "Questions to ask\n"
                 "- Ask a qualified clinician how this fictional guidance would be interpreted.\n"
