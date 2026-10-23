@@ -9,6 +9,55 @@ from urllib.request import Request, urlopen
 from fictional_clinic.models import Source
 from fictional_clinic.rag import STOPWORDS, tokenize
 
+# A live result counts as medical only if its own source says so. These are
+# DBpedia's medical ontology classes: Disease, Drug, MedicalSpecialty, Medicine,
+# and AnatomicalStructure with its subclasses (Hospital is a building, so not).
+MEDICAL_DBPEDIA_TYPES = frozenset(
+    {
+        "Disease",
+        "Drug",
+        "MedicalSpecialty",
+        "Medicine",
+        "AnatomicalStructure",
+        "Artery",
+        "BloodVessel",
+        "Bone",
+        "Brain",
+        "Embryology",
+        "Ligament",
+        "Lymph",
+        "Muscle",
+        "Nerve",
+        "Vein",
+    }
+)
+# OpenAlex files every work under a domain and a field. All of Health Sciences
+# counts, plus the Life Sciences fields where papers on genetic and immune
+# diseases land. Agricultural and Biological Sciences (plants, animals) does not.
+MEDICAL_OPENALEX_DOMAINS = frozenset({"Health Sciences"})
+MEDICAL_OPENALEX_FIELDS = frozenset(
+    {
+        "Biochemistry, Genetics and Molecular Biology",
+        "Immunology and Microbiology",
+        "Neuroscience",
+        "Pharmacology, Toxicology and Pharmaceutics",
+    }
+)
+
+
+def is_medical(source: Source) -> bool:
+    """True when a live source's own classification marks it as medical.
+
+    Sources without a classification (Wikidata search results, DBpedia SPARQL
+    fallbacks, untyped DBpedia entries) are not trusted as medical evidence.
+    """
+    if source.title.startswith("OpenAlex:"):
+        domain, field = (source.topics + ["", ""])[:2]
+        return domain in MEDICAL_OPENALEX_DOMAINS or field in MEDICAL_OPENALEX_FIELDS
+    if source.title.startswith("DBpedia:"):
+        return not MEDICAL_DBPEDIA_TYPES.isdisjoint(source.topics)
+    return False
+
 
 class WikidataClient:
     """Small Wikidata adapter for optional live open-knowledge lookup."""
@@ -54,19 +103,24 @@ class OpenAlexClient:
 
     endpoint = "https://api.openalex.org/works"
 
+    def __init__(self, api_key: str | None = None):
+        # Without a key, requests share a small free daily budget per IP address.
+        self.api_key = api_key
+
     def search(self, query: str, limit: int = 2, timeout: float = 6.0) -> list[Source]:
         search_text = knowledge_query(query)
         params = {
             "search": search_text,
             "per-page": str(limit),
         }
-        request = Request(
-            f"{self.endpoint}?{urlencode(params)}",
-            headers={
-                "Accept": "application/json",
-                "User-Agent": "fictional-clinic-learning-agent/0.1",
-            },
-        )
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": "fictional-clinic-learning-agent/0.1",
+        }
+        if self.api_key:
+            # A header, not ?api_key=, so the key never lands in URLs or logs.
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        request = Request(f"{self.endpoint}?{urlencode(params)}", headers=headers)
 
         with urlopen(request, timeout=timeout) as response:
             payload = json.loads(response.read().decode("utf-8"))
@@ -92,6 +146,7 @@ class OpenAlexClient:
                     path=url,
                     snippet=snippet,
                     score=0.0,
+                    topics=_openalex_topics(item),
                 )
             )
         return sources
@@ -142,12 +197,14 @@ class DbpediaClient:
                 _clean_lookup_text(_first_value(item.get("comment")))
                 or "No DBpedia summary available."
             )
+            types = item.get("typeName")
             sources.append(
                 Source(
                     title=f"DBpedia: {label}",
                     path=resource,
                     snippet=_trim(comment),
                     score=0.0,
+                    topics=[str(t) for t in types] if isinstance(types, list) else [],
                 )
             )
             if label.lower() == search_text.lower():
@@ -325,6 +382,18 @@ def _primary_source_name(work: dict[str, object]) -> str:
         return ""
     display_name = source.get("display_name")
     return str(display_name) if display_name else ""
+
+
+def _openalex_topics(work: dict[str, object]) -> list[str]:
+    topic = work.get("primary_topic")
+    if not isinstance(topic, dict):
+        return []
+    names = []
+    for level in ("domain", "field"):
+        entry = topic.get(level)
+        if isinstance(entry, dict) and entry.get("display_name"):
+            names.append(str(entry["display_name"]))
+    return names
 
 
 def _clean_lookup_text(value: str) -> str:

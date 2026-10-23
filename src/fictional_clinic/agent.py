@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from fictional_clinic.kg import DbpediaClient, OpenAlexClient, WikidataClient, knowledge_query
+from fictional_clinic.kg import (
+    DbpediaClient,
+    OpenAlexClient,
+    WikidataClient,
+    is_medical,
+    knowledge_query,
+)
 from fictional_clinic.models import QueryPlan, Role, Source
 from fictional_clinic.rag import LocalRetriever
 
@@ -78,10 +84,23 @@ class EvidenceAgent:
             steps.append(f"Live OpenAlex lookup failed: {exc.__class__.__name__}.")
             openalex_sources = []
 
+        # Keep only live results their own source labels as medical, so a
+        # non-medical question doesn't get a country or a company as "evidence".
+        live_results = [*wikidata_sources, *dbpedia_sources, *openalex_sources]
+        dropped = [source for source in live_results if not is_medical(source)]
+        wikidata_sources = [source for source in wikidata_sources if is_medical(source)]
+        dbpedia_sources = [source for source in dbpedia_sources if is_medical(source)]
+        openalex_sources = [source for source in openalex_sources if is_medical(source)]
+
         sources.extend(wikidata_sources)
         sources.extend(dbpedia_sources)
         sources.extend(openalex_sources)
         steps.append(f"Added {len(wikidata_sources)} live Wikidata result(s).")
         steps.append(f"Added {len(dbpedia_sources)} live DBpedia result(s).")
         steps.append(f"Added {len(openalex_sources)} OpenAlex paper/article result(s).")
+        if dropped:
+            labels = "; ".join(
+                f"{source.title} ({', '.join(source.topics) or 'no type'})" for source in dropped
+            )
+            steps.append(f"Dropped live result(s) not labelled medical by their source: {labels}.")
         return AgentResult(sources=sources, query_plan=query_plan, steps=steps)

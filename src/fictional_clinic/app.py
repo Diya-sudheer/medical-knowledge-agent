@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 
 from fictional_clinic.agent import EvidenceAgent
 from fictional_clinic.config import WEB_DIR, Settings, get_settings
+from fictional_clinic.kg import OpenAlexClient
 from fictional_clinic.models import AskRequest, AskResponse, ExploreOption, QueryPlan, Source
 from fictional_clinic.prompts import DISCLAIMER
 from fictional_clinic.rag import LocalRetriever
@@ -27,7 +28,11 @@ def get_agent(
     retriever: LocalRetriever = Depends(get_retriever),
     settings: Settings = Depends(get_settings),
 ) -> EvidenceAgent:
-    return EvidenceAgent(retriever=retriever, live_knowledge_enabled=settings.enable_live_kg)
+    return EvidenceAgent(
+        retriever=retriever,
+        openalex_client=OpenAlexClient(api_key=settings.openalex_api_key),
+        live_knowledge_enabled=settings.enable_live_kg,
+    )
 
 
 @app.get("/", response_class=HTMLResponse)
