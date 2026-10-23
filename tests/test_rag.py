@@ -13,3 +13,16 @@ def test_retrieval_does_not_match_only_generic_question_words():
     results = LocalRetriever().search("What should I know about breast cancer?")
 
     assert results == []
+
+
+def test_one_shared_word_is_not_enough():
+    # "travel" appears in the Amber Fever note, but 1 of 3 terms is not relevance.
+    results = LocalRetriever().search("What is the best travel insurance?")
+
+    assert results == []
+
+
+def test_relevance_bar_can_be_switched_off():
+    results = LocalRetriever(min_coverage=0.0).search("What is the best travel insurance?")
+
+    assert [source.title for source in results] == ["Amber Fever Follow-Up"]

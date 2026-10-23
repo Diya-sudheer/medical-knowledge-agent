@@ -15,6 +15,11 @@
     "mrr": 1.0,
     "out_of_scope_abstention": 100.0
   },
+  "relevance_bar": {
+    "min_coverage": 0.5,
+    "vague_answered": 25.0,
+    "vague_asked_for_detail": 75.0
+  },
   "stemming_ablation": {
     "lexical_top1_morphological": 0.0,
     "stemmed_top1_morphological": 100.0,
